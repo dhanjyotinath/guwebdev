@@ -1,29 +1,28 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request
 from forms import TestForm
-from distutils.log import debug
-from fileinput import filename
-from flask import *  
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # needed for CSRF
+app.secret_key = 'your-secret-key-here'
+
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 @app.route('/', methods=['GET', 'POST'])
 def form_view():
     form = TestForm()
-    if form.validate_on_submit():  # True only on valid POST
-        return render_template('success.html')
+
+    if form.validate_on_submit():
+        file = form.file.data
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        return render_template('success.html', name=form.name.data)
+
     return render_template('form.html', form=form)
-
-@app.route('/')  
-def main():  
-    return render_template("index.html")  
-
-@app.route('/success', methods = ['POST'])  
-def success():  
-    if request.method == 'POST':  
-        f = request.files['file']
-        f.save(f.filename)  
-        return render_template("Acknowledgement.html", name = f.filename)  
 
 
 if __name__ == '__main__':
